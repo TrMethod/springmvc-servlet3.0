@@ -1,0 +1,53 @@
+@EnableWebMvc
+
+
+@ResponseBody
+    @RequestMapping("/async")
+    public Callable<String> async(){
+        System.out.println("主线程开始"+Thread.currentThread());
+        Callable<String> callable = new Callable<String>() {
+            public String call() throws Exception {
+                System.out.println("副线程开始"+Thread.currentThread());
+                Thread.sleep(3000);
+                System.out.println("副线程结束"+Thread.currentThread());
+                return "异步方法";
+            }
+        };
+        System.out.println("主线程结束"+Thread.currentThread());
+        return callable;
+    }
+执行过程
+preHandle..../async
+主线程开始Thread[http-nio-8080-exec-5,5,main]
+主线程结束Thread[http-nio-8080-exec-5,5,main]
+副线程开始Thread[MvcAsync1,5,main]
+副线程结束Thread[MvcAsync1,5,main]
+preHandle..../async
+postHandle....
+afterCompletion....
+
+
+
+@RequestMapping("/creatOrder")
+    @ResponseBody
+    public DeferredResult<Object> order(){
+        DeferredResult<Object> result = new DeferredResult<Object>(3000L, "create fail");
+        DeferredResultQueue.save(result);
+        return result;
+    }
+
+    @ResponseBody
+    @RequestMapping("/order")
+    public String getOrder(){
+        String s = UUID.randomUUID().toString();
+        DeferredResult deferredResult = DeferredResultQueue.get();
+        deferredResult.setResult(s);
+        return s;
+    }
+preHandle..../creatOrder
+preHandle..../order
+preHandle..../creatOrder
+postHandle....
+afterCompletion....
+postHandle....
+afterCompletion....
